@@ -16,8 +16,10 @@ namespace RESTAPI.PeliculasMappers
             
             CreateMap<Pelicula, PeliculaDto>().ReverseMap();
             CreateMap<Pelicula, CrearPeliculaDto>().ReverseMap();
+            CreateMap<Pelicula, ActualizarpeliculaDto>().ReverseMap();
 
             CreateMap<AppUsuario, UsuarioDatosDto>().ReverseMap();
+            CreateMap<AppUsuario, UsuarioDto>().ReverseMap();
             // CreateMap<Usuario, UsuarioLoginDto>().ReverseMap();
             // CreateMap<Usuario, UsuarioRegistroDto>().ReverseMap();
             // CreateMap<Usuario, UsuarioLoginRespuestaDto>().ReverseMap();

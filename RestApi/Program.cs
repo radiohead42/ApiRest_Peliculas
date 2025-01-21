@@ -140,6 +140,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+//soporte para archivos estaticos
+app.UseStaticFiles();
+
 app.MapControllers();
 app.UseHttpsRedirection();
 //Soporte para CORS

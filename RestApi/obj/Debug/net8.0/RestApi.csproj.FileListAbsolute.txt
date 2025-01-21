@@ -294,3 +294,5 @@
 /home/dell/RestApi/bin/Debug/net8.0/Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
 /home/dell/RestApi/bin/Debug/net8.0/Microsoft.Extensions.Identity.Core.dll
 /home/dell/RestApi/bin/Debug/net8.0/Microsoft.Extensions.Identity.Stores.dll
+/home/dell/RestApi/obj/Debug/net8.0/RestApi.sourcelink.json
+/home/dell/RestApi/bin/Debug/net8.0/RestApi.staticwebassets.runtime.json

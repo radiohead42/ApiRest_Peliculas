@@ -24,7 +24,7 @@ public class UsuarioController : ControllerBase
         this._respuestasApi = new();
     }
     
-    [Authorize(Roles = "Admin")]
+    [AllowAnonymous]
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -41,7 +41,7 @@ public class UsuarioController : ControllerBase
         return Ok(listaUsuariosDto);
     }
     
-    [Authorize(Roles = "Admin")]
+    [AllowAnonymous]
     [HttpGet("{usuarioId}", Name = "GetUsuario")]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -93,7 +93,7 @@ public class UsuarioController : ControllerBase
         _respuestasApi.StatusCode = HttpStatusCode.OK;
         _respuestasApi.IsSucces = true;
         _respuestasApi.Result = usuario;  // Asegúrate de asignar el usuario aquí
-
+        
         // Devolver la respuesta con el usuario registrado
         return Ok(_respuestasApi);
     }

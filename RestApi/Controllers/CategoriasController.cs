@@ -63,7 +63,7 @@ public class CategoriasController : ControllerBase
         return Ok(itemCategoriaDto);
     }
     
-    [Authorize(Roles = "Admin")]
+    [AllowAnonymous]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -99,7 +99,7 @@ public class CategoriasController : ControllerBase
     }
 
     
-    [Authorize(Roles = "Admin")]
+    [AllowAnonymous]
     [HttpPatch("{categoriaId:int}", Name = "ActualizarPatchCategoria")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -126,7 +126,7 @@ public class CategoriasController : ControllerBase
 
         return NoContent();
     }
-    [Authorize(Roles = "Admin")]
+    [AllowAnonymous]
     [HttpPut("{categoriaId:int}", Name = "ActualizarPutCategoria")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -162,7 +162,7 @@ public class CategoriasController : ControllerBase
         return NoContent();
     }
     
-    [Authorize(Roles = "Admin")]
+    [AllowAnonymous]
     [HttpDelete("{categoriaId:int}", Name = "DeleteCategoria")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

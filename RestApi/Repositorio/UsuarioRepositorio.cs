@@ -5,6 +5,7 @@ using System.Text;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.CodeAnalysis.Elfie.Serialization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RESTAPI.Data;
 using RESTAPI.Models;
@@ -41,7 +42,7 @@ public class UsuarioRepositorio : IUsuarioRepositorio
 
     public AppUsuario GetUsuario(string usuarioId)
     {
-        throw new NotImplementedException();
+        return _bd.AppUsuarios.FirstOrDefault(c => c.Id == usuarioId);
     }
 
     // public AppUsuario GetUsuario(string usuarioId)
@@ -49,10 +50,10 @@ public class UsuarioRepositorio : IUsuarioRepositorio
     //     return _bd.AppUsuarios.FirstOrDefault( c => c.Id == usuarioId);
     // }
 
-    ICollection<AppUsuario> IUsuarioRepositorio.GetUsuarios()
-    {
-        throw new NotImplementedException();
-    }
+    // ICollection<AppUsuario> IUsuarioRepositorio.GetUsuarios()
+    // {
+    //     throw new NotImplementedException();
+    // }
 
     public bool IsUniqueUser(string usuario)
     {
@@ -67,94 +68,117 @@ public class UsuarioRepositorio : IUsuarioRepositorio
         }
     }
 
-     public async Task<UsuarioLoginRespuestaDto> Login(UsuarioLoginDto usuarioLoginDto)
+    public async Task<UsuarioLoginRespuestaDto> Login(UsuarioLoginDto usuarioLoginDto)
+{
+    var usuario = _bd.AppUsuarios.FirstOrDefault(
+        u => u.UserName.ToLower() == usuarioLoginDto.nombreUsuario.ToLower());
+
+    // Si el usuario no existe, retornamos un resultado vacío
+    if (usuario == null)
     {
-        // var passwordEncriptado = obtenermd5(usuarioLoginDto.Password);
-        var usuario = _bd.AppUsuarios.FirstOrDefault(
-            u => u.UserName.ToLower() == usuarioLoginDto.nombreUsuario.ToLower());
-
-        bool isValid = await _userManager.CheckPasswordAsync(usuario, usuarioLoginDto.Password);
-
-        if (usuario == null || isValid == false)
+        return new UsuarioLoginRespuestaDto()
         {
-            return new UsuarioLoginRespuestaDto()
-            {
-                Token = "",
-                Usuario = null
-            };
-        }
-
-        var roles = await _userManager.GetRolesAsync(usuario);
-        
-        var manejadorToken = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(claveSecreta);
-        
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(new Claim[]
-            {
-                new Claim(ClaimTypes.Name, usuario.UserName.ToString()),
-                new Claim(ClaimTypes.Role, roles.FirstOrDefault())
-                // Asegúrate de que 'usuario.Role' no es nulo
-            }),
-            Expires = DateTime.UtcNow.AddDays(7),
-            SigningCredentials = new SigningCredentials(
-                new SymmetricSecurityKey(key), 
-                SecurityAlgorithms.HmacSha256Signature)
+            Token = "",
+            Usuario = null
         };
-
-        var token = manejadorToken.CreateToken(tokenDescriptor);
-
-        UsuarioLoginRespuestaDto usuarioLoginRespuestaDto = new UsuarioLoginRespuestaDto()
-        {
-            Token = manejadorToken.WriteToken(token),
-            Usuario = _mapper.Map<UsuarioDatosDto>(usuario)
-        };
-
-        return usuarioLoginRespuestaDto;
     }
+
+    // Verificar si la contraseña es correcta
+    bool isValid = await _userManager.CheckPasswordAsync(usuario, usuarioLoginDto.Password);
+
+    if (!isValid)
+    {
+        return new UsuarioLoginRespuestaDto()
+        {
+            Token = "",
+            Usuario = null
+        };
+    }
+
+    // Obtener roles del usuario
+    var roles = await _userManager.GetRolesAsync(usuario);
+    
+    // Asegurarnos de que roles no sea vacío
+    if (roles == null || !roles.Any())
+    {
+        throw new Exception("El usuario no tiene roles asignados.");
+    }
+
+    // Crear lista de claims
+    var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.Name, usuario.UserName)
+    };
+
+    // Agregar todos los roles del usuario
+    foreach (var role in roles)
+    {
+        claims.Add(new Claim(ClaimTypes.Role, role));
+    }
+
+    // Generación del token
+    var manejadorToken = new JwtSecurityTokenHandler();
+    var key = Encoding.ASCII.GetBytes(claveSecreta);
+
+    var tokenDescriptor = new SecurityTokenDescriptor
+    {
+        Subject = new ClaimsIdentity(claims),
+        Expires = DateTime.UtcNow.AddDays(7),
+        SigningCredentials = new SigningCredentials(
+            new SymmetricSecurityKey(key),
+            SecurityAlgorithms.HmacSha256Signature)
+    };
+
+    var token = manejadorToken.CreateToken(tokenDescriptor);
+
+    // Preparar la respuesta
+    UsuarioLoginRespuestaDto usuarioLoginRespuestaDto = new UsuarioLoginRespuestaDto()
+    {
+        Token = manejadorToken.WriteToken(token),
+        Usuario = _mapper.Map<UsuarioDatosDto>(usuario)
+    };
+
+    return usuarioLoginRespuestaDto;
+}
+
+
 
     public async Task<UsuarioDatosDto> Registro(UsuarioRegistroDto usuarioRegistroDto)
     {
-        // var passwordEncriptado = obtenermd5(usuarioRegistroDto.Password);
-        
         AppUsuario usuario = new AppUsuario()
         {
             UserName = usuarioRegistroDto.nombreUsuario,
             Email = usuarioRegistroDto.nombreUsuario,
             NormalizedEmail = usuarioRegistroDto.nombreUsuario.ToUpper(),
-            Nombre = usuarioRegistroDto.Nombre,  // Asegúrate de que 'Role' no sea null
+            Nombre = usuarioRegistroDto.Nombre,
         };
 
         var result = await _userManager.CreateAsync(usuario, usuarioRegistroDto.Password);
 
         if (result.Succeeded)
         {
-            if (!_roleManager.RoleExistsAsync("Admin").GetAwaiter().GetResult())
+            if (!await _roleManager.RoleExistsAsync("Admin"))
             {
                 await _roleManager.CreateAsync(new IdentityRole("Admin"));
                 await _roleManager.CreateAsync(new IdentityRole("Registrado"));
             }
 
-            await _userManager.AddToRoleAsync(usuario, "Admin");
-            var usuarioRetornado = _bd.AppUsuarios.FirstOrDefault( u => u.UserName == usuarioRegistroDto.nombreUsuario );
-            
+            await _userManager.AddToRoleAsync(usuario, "Registrado"); // Cambia "Admin" a "Registrado" si es necesario.
+
+            var usuarioRetornado = await _bd.AppUsuarios.FirstOrDefaultAsync(u => u.UserName == usuarioRegistroDto.nombreUsuario);
+
+            if (usuarioRetornado == null)
+            {
+                throw new Exception("El usuario no fue encontrado después del registro.");
+            }
+
             return _mapper.Map<UsuarioDatosDto>(usuarioRetornado);
-            
         }
 
-        // _bd.Usuarios.Add(usuario);
-        // await _bd.SaveChangesAsync();
-        //
-        // // Revisa que el usuario no sea null
-        // if (usuario == null)
-        // {
-        //     throw new Exception("Error al guardar el usuario en la base de datos.");
-        // }
-        //
-        // usuario.Password = passwordEncriptado;
-        return new UsuarioDatosDto();
+        var errorMessages = string.Join(", ", result.Errors.Select(e => e.Description));
+        throw new Exception($"Error al crear el usuario: {errorMessages}");
     }
+
     //
     //
     // public static string obtenermd5(string valor)
